@@ -4,9 +4,11 @@ import com.eveningoutpost.dexdrip.Home;
 import com.eveningoutpost.dexdrip.models.BgReading;
 import com.eveningoutpost.dexdrip.models.BloodTest;
 import com.eveningoutpost.dexdrip.models.DateUtil;
+import com.eveningoutpost.dexdrip.models.JoH;
 import com.eveningoutpost.dexdrip.models.Sensor;
 import com.eveningoutpost.dexdrip.models.Treatments;
 import com.eveningoutpost.dexdrip.models.UserError;
+import com.eveningoutpost.dexdrip.R;
 import com.eveningoutpost.dexdrip.utilitymodels.Inevitable;
 import com.eveningoutpost.dexdrip.utilitymodels.Pref;
 import com.eveningoutpost.dexdrip.utilitymodels.PumpStatus;
@@ -17,6 +19,8 @@ import com.eveningoutpost.dexdrip.cgm.carelinkfollow.message.Marker;
 import com.eveningoutpost.dexdrip.cgm.carelinkfollow.message.RecentData;
 import com.eveningoutpost.dexdrip.cgm.carelinkfollow.message.SensorGlucose;
 import com.eveningoutpost.dexdrip.cgm.carelinkfollow.message.TextMap;
+import com.eveningoutpost.dexdrip.wearintegration.ExternalStatusService;
+import com.eveningoutpost.dexdrip.xdrip;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +44,10 @@ public class CareLinkDataProcessor {
     private static final boolean D = false;
 
     private static final String SOURCE_CARELINK_FOLLOW = "CareLink Follow";
+
+    private static String gs(int id) {
+        return xdrip.getAppContext().getString(id);
+    }
 
 
     static synchronized void processData(final RecentData recentData, final boolean live) {
@@ -226,6 +234,35 @@ public class CareLinkDataProcessor {
             if (recentData.activeInsulin != null)
                 PumpStatus.setBolusIoB(recentData.activeInsulin.amount);
             PumpStatus.syncUpdate();
+        }
+
+        //EXTERNAL STATUS INFO (External Status)
+        try {
+            final StringBuilder sb = new StringBuilder();
+            if (recentData.sensorState.equals("UNKNOWN")) {
+                sb.append("?");
+            } else if (recentData.sensorState.equals(RecentData.SYSTEM_STATUS_SENSOR_OFF)) {
+                sb.append("-");
+            } else {
+                final int sensorDays = recentData.sensorDurationMinutes / (24*60);
+                final int sensorRemainingMinutes = recentData.sensorDurationMinutes % (24*60);
+                final int sensorHours = sensorRemainingMinutes / 60;
+                final int sensorMinutes = sensorRemainingMinutes % 60;
+
+                //Guardian Connect
+                if (recentData.isGM()) {
+                    sb.append("\u23F1" + String.format("%dh", recentData.timeToNextCalibHours) + " ");
+                    sb.append("\uD83D\uDCC5" + String.format("%dd%dh%dm", sensorDays, sensorHours, sensorMinutes));
+                    //Pump (NGP)
+                } else if (recentData.isNGP()) {
+                    sb.append("\uD83D\uDD3A" + JoH.qs(recentData.maxAutoBasalRate, 3) + gs(R.string.insulin_unit) + " ");
+                    sb.append("\u23F1" + String.format("%dh%dm", recentData.timeToNextCalibrationMinutes / 60, recentData.sensorDurationMinutes % 24) + " ");
+                    sb.append("\uD83D\uDCC5" + String.format("%dd%dh%dm", sensorDays, sensorHours, sensorMinutes));
+                }
+            }
+            ExternalStatusService.update(JoH.tsl(), sb.toString(), true);
+        } catch (Exception ex) {
+            UserError.Log.d(TAG, "External status update error: " + ex.getMessage());
         }
 		
         // LAST ALARM -> NOTE (only for GC)
