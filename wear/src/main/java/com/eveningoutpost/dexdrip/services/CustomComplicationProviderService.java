@@ -52,7 +52,8 @@ public class CustomComplicationProviderService extends ComplicationProviderServi
     enum COMPLICATION_STATE {
         DELTA(0),
         AGO(1),
-        RESET(2);
+        DELTAAGO(2),
+        RESET(3);
 
         private int enum_value;
 
@@ -153,6 +154,9 @@ public class CustomComplicationProviderService extends ComplicationProviderServi
                         break;
                     case AGO:
                         builder.setShortTitle(ComplicationText.plainText(niceTimeSinceBgReading(bgReading)));
+                        break;
+                    case DELTAAGO:
+                        builder.setShortTitle(ComplicationText.plainText(niceTimeSinceBgReading(bgReading) + getDeltaText(bgReading, is_stale)));
                         break;
                     default:
                         builder.setShortTitle(ComplicationText.plainText("ERR!"));
