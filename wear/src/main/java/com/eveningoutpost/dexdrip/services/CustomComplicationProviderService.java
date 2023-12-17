@@ -24,8 +24,11 @@ import android.support.wearable.complications.ComplicationData;
 import android.support.wearable.complications.ComplicationManager;
 import android.support.wearable.complications.ComplicationProviderService;
 import android.support.wearable.complications.ComplicationText;
+import android.support.wearable.complications.ComplicationText.TimeDifferenceBuilder;
 import android.support.wearable.complications.ProviderUpdateRequester;
 import android.util.Log;
+
+import java.util.concurrent.TimeUnit;
 
 import com.activeandroid.ActiveAndroid;
 import com.eveningoutpost.dexdrip.Home;
@@ -110,6 +113,8 @@ public class CustomComplicationProviderService extends ComplicationProviderServi
                         this, thisProvider, complicationId);
 
         String numberText = "";
+        String numberText2 = "";
+        String arrowText = "";
         BgReading bgReading = BgReading.last(true);
         if ((bgReading == null) || (JoH.msSince(bgReading.timestamp) >= FRESH_MS)) {
             try {
@@ -124,11 +129,15 @@ public class CustomComplicationProviderService extends ComplicationProviderServi
 
         if (bgReading == null) {
             numberText = "null";
+            numberText2 = "null";
         } else {
             if (JoH.msSince(bgReading.timestamp) < STALE_MS) {
                 numberText = bgReading.displayValue(this) + " " + bgReading.displaySlopeArrow();
+                numberText2 = bgReading.displayValue(this);
+                arrowText = bgReading.displaySlopeArrow();
             } else {
                 numberText = "old " + niceTimeSinceBgReading(bgReading);
+                numberText2 = "old ";
                 is_stale = true;
             }
         }
@@ -144,21 +153,35 @@ public class CustomComplicationProviderService extends ComplicationProviderServi
             case ComplicationData.TYPE_SHORT_TEXT:
 
                 final ComplicationData.Builder builder = new ComplicationData.Builder(ComplicationData.TYPE_SHORT_TEXT)
-                        .setShortText(ComplicationText.plainText(numberText))
                         .setTapAction(complicationPendingIntent);
 
                 UserError.Log.d(TAG, "TYPE_SHORT_TEXT Current complication state:" + state);
                 switch (state) {
                     case DELTA:
+                        builder.setShortText(ComplicationText.plainText(numberText));
                         builder.setShortTitle(ComplicationText.plainText(getDeltaText(bgReading, is_stale)));
                         break;
                     case AGO:
+                        builder.setShortText(ComplicationText.plainText(numberText));
                         builder.setShortTitle(ComplicationText.plainText(niceTimeSinceBgReading(bgReading)));
                         break;
                     case DELTAAGO:
-                        builder.setShortTitle(ComplicationText.plainText(niceTimeSinceBgReading(bgReading) + getDeltaText(bgReading, is_stale)));
+                        final TimeDifferenceBuilder complicationTextBuilder = new TimeDifferenceBuilder();
+                        complicationTextBuilder.setStyle(ComplicationText.DIFFERENCE_STYLE_STOPWATCH)
+                            .setSurroundingText("^1" + arrowText)
+                            .setMinimumUnit(TimeUnit.SECONDS)
+                                .setReferencePeriodEnd(bgReading.timestamp);
+
+                        final String deltaText = getDeltaText(bgReading, is_stale);
+                        String optionalSeparator = "";
+                        if (!deltaText.startsWith("+") && !deltaText.startsWith("-")) {
+                            optionalSeparator = " ";
+                        }
+                        builder.setShortText(ComplicationText.plainText(numberText2 + optionalSeparator + deltaText));
+                        builder.setShortTitle(complicationTextBuilder.build());
                         break;
                     default:
+                        builder.setShortText(ComplicationText.plainText(numberText));
                         builder.setShortTitle(ComplicationText.plainText("ERR!"));
                 }
 
