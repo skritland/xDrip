@@ -61,6 +61,7 @@ import com.eveningoutpost.dexdrip.stats.StatsResult;
 import com.eveningoutpost.dexdrip.utils.CheckBridgeBattery;
 import com.eveningoutpost.dexdrip.utils.DexCollectionType;
 import com.eveningoutpost.dexdrip.utils.VersionFixer;
+import com.eveningoutpost.dexdrip.utils.VibrateBloodGlucose;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -2442,6 +2443,7 @@ public class ListenerService extends WearableListenerService implements GoogleAp
             Log.d(TAG, "syncBGData BG data has changed, refresh watchface, phone battery=" + battery );
             resendData(getApplicationContext(), battery);
             CustomComplicationProviderService.refresh();
+            VibrateBloodGlucose.vibrateBg(BgReading.last(), Integer.parseInt(mPrefs.getString("bg_vibrations", "0")));
         }
         else
             Log.d(TAG, "syncBGData BG data has NOT changed, do not refresh watchface, phone battery=" + battery );

@@ -19,6 +19,18 @@
         <item>5</item>
     </string-array>
 
+    <string-array name="bg_vibrations">
+        <item>off</item>
+        <item>without trend</item>
+        <item>with trend</item>
+
+    </string-array>
+    <string-array name="bg_vibrations_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
     <string-array name="toggle_fontsize">
         <item>10</item>
         <item>12</item>
@@ -145,6 +157,8 @@
     <string name="pref_xdrip_watch_settings">XDrip Watchface Settings</string>
     <string name="pref_chart_time">Chart Timeframe</string>
     <string name="pref_summary_chart_time">Chart Timeframe</string>
+    <string name="pref_bg_vibrations">Vibrate BG value</string>
+    <string name="pref_summary_bg_vibrations">Vibrate BG value</string>
     <string name="pref_step_delay_time">Step Delay</string>
     <string name="pref_summary_step_delay_time">Step Counter Time Delay</string>
     <string name="pref_circlewf_settings">Circle WF Settings</string>

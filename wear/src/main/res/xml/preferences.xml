@@ -202,6 +202,14 @@
             android:summary="@string/pref_summary_chart_time"
             android:title="@string/pref_chart_time" />
 
+        <ListPreference
+            android:defaultValue="0"
+            android:entries="@array/bg_vibrations"
+            android:entryValues="@array/bg_vibrations_values"
+            android:key="bg_vibrations"
+            android:summary="@string/pref_summary_bg_vibrations"
+            android:title="@string/pref_bg_vibrations" />
+
         <PreferenceScreen
             android:key="button_circlewf_category_key"
             android:persistent="false"
