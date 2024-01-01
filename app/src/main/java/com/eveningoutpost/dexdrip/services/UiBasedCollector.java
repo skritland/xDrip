@@ -360,8 +360,18 @@ public class UiBasedCollector extends NotificationListenerService {
         if ((mgdl >= 40 && mgdl <= 405)) {
             val grace = DexCollectionType.getCurrentSamplePeriod() * 4;
             val recentbt = msSince(lastReadingTimestamp) < grace;
-            val dedupe = (!recentbt && isDifferentToLast(mgdl)) ? Constants.SECOND_IN_MS * 10
+            // Medtronic Minimed likes to send notification updates even if there was
+            // no sensor value update (maybe IOB update or sth). And the update happens very
+            // frequently after getCurrentDeduplicationPeriod() but before getCurrentSamplePeriod()
+            // This leads to big delays. Solution below is ugly and can lead to delays when several
+            // measurements are equal. But stable reading looks safe. To implement it properly,
+            // BgReading.bgReadingInsertFromG5 should not have one minute filter or some other
+            // advanced solution should be developed.
+            val dedupPeriod = isMinimed()
+                    ? DexCollectionType.getCurrentSamplePeriod() + Constants.SECOND_IN_MS * 30
                     : DexCollectionType.getCurrentDeduplicationPeriod();
+            val dedupe = (!recentbt && isDifferentToLast(mgdl)) ? Constants.SECOND_IN_MS * 10
+                    : dedupPeriod;
             val period = recentbt ? grace : dedupe;
             val existing = BgReading.getForPreciseTimestamp(timestamp, period, false);
             if (existing == null) {
@@ -419,6 +429,13 @@ public class UiBasedCollector extends NotificationListenerService {
             if (lastPackage.startsWith("com.medtronic")) return 9;
         }
         return 6;
+    }
+
+    private boolean isMinimed() {
+        if (lastPackage != null) {
+            if (lastPackage.startsWith("com.medtronic")) return true;
+        }
+        return false;
     }
 
     private void getTextViews(final List<TextView> output, final ViewGroup parent) {
