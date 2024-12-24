@@ -2346,7 +2346,6 @@ public class ListenerService extends WearableListenerService implements GoogleAp
                 Sensor.InitDb(context);//ensure database has already been initialized
             }
             Sensor sensor = Sensor.currentSensor();
-            if (sensor != null) {
                 for (DataMap entry : entries) {
                     if (entry != null) {
                         String bgrecord = entry.getString("bgs");
@@ -2382,7 +2381,7 @@ public class ListenerService extends WearableListenerService implements GoogleAp
                                 exists.age_adjusted_raw_value = bgData.age_adjusted_raw_value;
                                 exists.calibration_flag = bgData.calibration_flag;
                                 exists.ignoreForStats = bgData.ignoreForStats;
-                                exists.time_since_sensor_started = bgData.time_since_sensor_started;
+                                //exists.time_since_sensor_started = bgData.time_since_sensor_started;
                                 exists.ra = bgData.ra;
                                 exists.rb = bgData.rb;
                                 exists.rc = bgData.rc;
@@ -2397,8 +2396,10 @@ public class ListenerService extends WearableListenerService implements GoogleAp
                                 if (calibration != null) {
                                     exists.calibration = calibration;
                                     exists.calibration_uuid = calibration.uuid;
-                                    exists.sensor = sensor;
-                                    exists.sensor_uuid = sensor.uuid;
+                                    if (sensor != null) {
+                                        exists.sensor = sensor;
+                                        exists.sensor_uuid = sensor.uuid;
+                                    }
                                     if (exists.calculated_value != bgData.calculated_value) {
                                         changed = true;
                                     }
@@ -2414,15 +2415,19 @@ public class ListenerService extends WearableListenerService implements GoogleAp
                                     Log.d(TAG, "syncBGData add BG; calibration does exist for uuid=" + bgData.uuid + " timestamp=" + bgData.timestamp + " timeString=" + JoH.dateTimeText(bgData.timestamp));
                                     bgData.calibration = calibration;
                                     bgData.calibration_uuid = calibration.uuid;
-                                    bgData.sensor = sensor;
-                                    bgData.sensor_uuid = sensor.uuid;
+                                    if (sensor != null) {
+                                        bgData.sensor = sensor;
+                                        bgData.sensor_uuid = sensor.uuid;
+                                    }
                                     changed = true;
                                     bgData.save();
                                 } else {
-                                    if (bgData.source_info != null && (bgData.source_info.contains("Native") || bgData.source_info.contains("Follow") || bgData.source_info.contains("G7"))) {
-                                        UserError.Log.d(TAG, "Saving BgData without calibration as source info is native or follow");
-                                        bgData.sensor = sensor;
-                                        bgData.sensor_uuid = sensor.uuid;
+                                    if (bgData.source_info == null || (bgData.source_info.contains("Native") || bgData.source_info.contains("Follow") || bgData.source_info.contains("G7"))) {
+                                        UserError.Log.d(TAG, "Saving BgData without calibration as source info is unknown, native or follow");
+                                        if (sensor != null) {
+                                            bgData.sensor = sensor;
+                                            bgData.sensor_uuid = sensor.uuid;
+                                        }
                                         changed = true;
                                         bgData.save();
                                     } else {
@@ -2433,8 +2438,7 @@ public class ListenerService extends WearableListenerService implements GoogleAp
                         }
                     }
                 }
-            }
-            else {
+            if (sensor == null) {
                 Log.d(TAG, "syncBGData No Active Sensor!! Request WEARABLE_INITDB_PATH");
                 sendData(WEARABLE_INITDB_PATH, null);
             }
